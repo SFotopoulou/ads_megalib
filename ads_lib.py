@@ -16,11 +16,11 @@ def get_library(library_id, num_documents, config):
     """
 
     start = 0
-    rows = 25
+    rows = 2000  # max number of list length from API
     num_paginates = int(math.ceil(num_documents / (1.0*rows)))
     documents = []
     for i in range(num_paginates):
-        print('Pagination {} out of {}'.format(i+1, num_paginates))
+        #print('Pagination {} out of {}'.format(i+1, num_paginates))
 
         r = requests.get(
             '{}/libraries/{id}?start={start}&rows={rows}'.format(
