@@ -5,8 +5,6 @@ import json
 from ads_lib import get_library
 
 ######### Parameters #########
-t = json.load(open('mysecrets'))
-my_token = t['my_token']
 export_filename = 'export_bib.bib'
 export_format = 'bibtex'
 # leave empty to export all your libraries
@@ -14,11 +12,15 @@ export_format = 'bibtex'
 library_name = ''
 bibtex_keyformat = "%1H%R"
 sort_format = "first_author asc"
+######################################
+
 #
+#
+t = json.load(open('mysecrets'))
+my_token = t['my_token']
 base_url = "https://api.adsabs.harvard.edu/v1/biblib"
 headers = {'Authorization': "Bearer " + my_token,
            "Content-type": "application/json"}
-######################################
 
 # Finds all your libraries
 r = requests.get(base_url+"/libraries",

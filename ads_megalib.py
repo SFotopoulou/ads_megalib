@@ -2,12 +2,18 @@ import requests
 import json
 from ads_lib import get_library
 
+
+######### Parameters #########
+mega_lib_name = 'MEGALIB'
+mega_lib_description = "Union of all libraries"
+######################################
+
 t = json.load(open('mysecrets'))
 my_token = t['my_token']
-mega_lib_name = 'MEGALIB'
 base_url = "https://api.adsabs.harvard.edu/v1/biblib"
 headers = {'Authorization': "Bearer " + my_token,
            "Content-type": "application/json"}
+######################################
 
 # Get all your libraries
 r = requests.get(base_url+"/libraries",
@@ -44,7 +50,7 @@ if mega_lib_id == 0:
     url = base_url+"/libraries"
 
     querystring = {"name": mega_lib_name,
-                   "description": "Union of all libraries",
+                   "description": mega_lib_description,
                    "bibcode": my_bibs}
 
     response = requests.request("POST",
