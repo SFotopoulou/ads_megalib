@@ -43,3 +43,17 @@ def get_library(library_id, num_documents, config):
         start += rows
 
     return documents
+
+
+def fix_authornames(bib_str):
+    # the bib_str is the ourput of response.json()['export']
+    export = bib_str.split('\n')
+    tt = []
+    for e in export:
+        if '@' in e:
+            tt.append(e.replace(' ', '-'))
+        else:
+            tt.append(e)
+    bib = '\n'.join(tt)
+
+    return bib

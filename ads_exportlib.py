@@ -2,7 +2,7 @@ import os
 import math
 import requests
 import json
-from ads_lib import get_library
+from ads_lib import get_library, fix_authornames
 
 ######### Parameters #########
 export_filename = 'export_bib.bib'
@@ -45,9 +45,9 @@ config['headers'] = headers
 config['url'] = base_url
 
 for library in my_libraries:
-
+    #
     bib = get_library(library['id'], library['num_documents'], config)
-
+    #
     bibs.extend(bib)
 
 # Keep unique bibcodes
@@ -68,23 +68,25 @@ num_paginates = int(math.ceil(len(my_bibs) / (1.0*rows)))
 
 s1 = start
 s2 = rows
+fout = open(export_filename, 'a')
 
 for i in range(num_paginates):
-
+    #
     querystring = {"bibcode": my_bibs[s1:s2],
                    "keyformat": bibtex_keyformat,
                    "sort": sort_format}
-
+    #
     response = requests.request("POST",
                                 export_url,
                                 headers=headers,
                                 data=json.dumps(querystring))
 
-    print(response)
-    fout = open(export_filename, 'a')
-    fout.write(response.json()['export'])
+    expbib = fix_authornames(response.json()['export'])
+
+    fout.write(expbib)
 
     s1 = s1 + rows
     s2 = s2 + rows
 
 fout.close()
+print(response)
