@@ -3,7 +3,7 @@ import math
 import requests
 import json
 from ads_lib import get_library, fix_authornames
-
+from ads_lib import fix_journal_abbr
 ######### Parameters #########
 export_filename = 'export_bib.bib'
 export_format = 'bibtex'
@@ -12,6 +12,8 @@ export_format = 'bibtex'
 library_name = ''
 bibtex_keyformat = "%1H%R"
 sort_format = "first_author asc"
+# Use short or long journal names instead of journal TeX abbreviations; \aj
+fix_journal = True
 ######################################
 
 #
@@ -82,7 +84,8 @@ for i in range(num_paginates):
                                 data=json.dumps(querystring))
 
     expbib = fix_authornames(response.json()['export'])
-
+    if fix_journal == True:
+        expbib = fix_journal_abbr(expbib, format='short')
     fout.write(expbib)
 
     s1 = s1 + rows
