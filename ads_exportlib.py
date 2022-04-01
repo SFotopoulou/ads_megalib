@@ -2,10 +2,12 @@ import os
 import math
 import requests
 import json
-from ads_lib import get_library, fix_authornames
+from ads_lib import get_library
 from ads_lib import fix_journal_abbr
+from ads_lib import adsresponse_to_dict, dict_to_bib
+
 ######### Parameters #########
-export_filename = 'export_bib.bib'
+export_filename = 'exportlib.bib'
 export_format = 'bibtex'
 # leave empty to export all your libraries
 # or use comma-separated names of your libraries
@@ -33,10 +35,12 @@ if library_name == '':
     my_libraries = all_libraries
 else:
     libs = library_name.split(',')
-    lib_list = [l.lower() for l in libs]
+    lib_list = [l.lower().strip() for l in libs]
     my_libraries = []
     my_libraries = [
         lib for lib in all_libraries if lib['name'].lower() in lib_list]
+    if len(my_libraries)==0:
+        raise NameError(f"No libraries found named: {lib_list}")
 
 print("Exporting from {} libraries".format(str(len(my_libraries))))
 
@@ -82,11 +86,16 @@ for i in range(num_paginates):
                                 export_url,
                                 headers=headers,
                                 data=json.dumps(querystring))
+    # turn response into dictionary of references
+    expbib = adsresponse_to_dict(response.json()['export'])
 
-    expbib = fix_authornames(response.json()['export'])
     if fix_journal == True:
         expbib = fix_journal_abbr(expbib, format='short')
-    fout.write(expbib)
+
+    final_bib = dict_to_bib(expbib)
+
+    fout.write(final_bib)
+
 
     s1 = s1 + rows
     s2 = s2 + rows

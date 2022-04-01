@@ -1,6 +1,18 @@
 import math
 import requests
-
+import json
+import warnings
+# https://astrothesaurus.org/
+# https://github.com/astrothesaurus/UAT
+# version 4.2.0
+with open('UAT_list.json') as f:
+    thesaurus = json.load(f)
+    
+uris = {}
+for item in thesaurus:
+    name = item['name']
+    number = int(item['uri'].split('/')[-1])
+    uris[number] = name
 
 def journal_names():
     # from http://astro.dur.ac.uk/~cole/Intro_LaTeX_PG/PhDthesis/rcrain/aas_macros.sty
@@ -64,7 +76,7 @@ def journal_names():
     short_name['\\caa'] = 'ChA&A'
 
     long_name['\\aj'] = 'Astronomical Journal'
-    long_name['\\araa'] = 'Annual Review of Astron and Astrophys'
+    long_name['\\araa'] = 'Annual Review of Astron and Astrophysics'
     long_name['\\apj'] = 'Astrophysical Journal'
     long_name['\\apjl'] = 'Astrophysical Journal, Letters'
     long_name['\\apjs'] = 'Astrophysical Journal, Supplement'
@@ -162,44 +174,137 @@ def get_library(library_id, num_documents, config):
 
     return documents
 
-
-def fix_authornames(bib_str):
-    # the bib_str is the ourput of response.json()['export']
-    export = bib_str.split('\n')
-    tt = []
-    for e in export:
-        if '@' in e:
-            tt.append(e.replace(' ', '-'))
+def adsresponse_to_dict(bib_received):
+    list_bib = bib_received.split('@')[1:]
+    #
+    # store library into 2D dictionary
+    records = {}
+    for record in list_bib:
+        row = [r.strip() for r in record.strip().split(',\n')]
+        # Replace space in author names
+        ads_key = row[0].replace(' ', '-')
+        #
+        if ads_key == '':
+            pass
         else:
-            tt.append(e)
-    bib = '\n'.join(tt)
+        # split values into dictionary
+            temp_dict = {}
+            for item in row[1:-1]:
+                if 'author' in item:
+                    items = item.split('author = ')
+                    key = 'author'
+                    value = items[1]                    
+                elif 'title' in item:
+                    items = item.split('title = ')
+                    key = 'title'
+                    value = items[1]    
+                elif 'keywords = ' in item:
+                    items = item.split('keywords = ')
+                    key = 'keywords'
+                    value = items[1]  
+                else:
+                    items = item.split(' =')
+                    key, value = items[0], items[1]
+                #
+                #
+                temp_dict[key.strip()]=value.strip()
+                #
+            records[ads_key] = temp_dict
+    #
+    return records
 
-    return bib
-
-
-def fix_journal_abbr(bib_str, format='short'):
-    # the bib_str is the ourput of response.json()['export']
+def fix_journal_abbr(bib_dict, format='short'):
     # 'short' prints abbreviated journal name; e.g. A&A, MNRAS, ApJ
     # 'long' prints full name; Astronomy & Astrophysics
     short_name, long_name = journal_names()
-
+    #
     journal_dict = short_name
     if format == 'long':
         journal_dict = long_name
-
-    export = bib_str.split('\n')
-    tt = []
-    for e in export:
-        if 'journal' in e:
-            head = e.split('{')
-            tail = head[1].split('}')
-            journal = tail[0]
+    #
+    for item in bib_dict.keys():
+        #
+        try:
+            e = bib_dict[item]['journal']
+            #
+            journal = e[1:-1] # remove '{', '}'
             if journal[0] == '\\':
                 name = journal_dict[journal]
-                new_name = head[0] + '{' + name + '}' + tail[1]
-                tt.append(new_name)
-        else:
-            tt.append(e)
-    bib = '\n'.join(tt)
+                new_name = '{' + name + '}'
+                bib_dict[item]['journal'] = new_name
+        except:
+            warnings.warn(f"Warning: {item} has no 'Journal' keyword.")
+    return bib_dict
 
-    return bib
+def resolve_uat(code, thesaurus=uris):
+    # look up the keyword code corresponding to the unified thesaurus
+    # https://astrothesaurus.org/
+    return thesaurus[code]
+    
+def add_keyword_tag(bib_dict, tag, only_ads=False):
+    
+    for item in bib_dict.keys():
+        if only_ads:
+            bib_dict[item]['keywords']= '{' + f'{tag}' + '}'
+        else:
+            if 'keywords' in bib_dict[item].keys():
+                #
+                keywords = bib_dict[item]['keywords'][1:-1] # remove '{', '}}
+                key_str = keywords.split(',')
+                #
+                new_keys = []
+                for k in key_str:
+                    try:
+                        code = int(k)
+                        desc = resolve_uat(code)
+                        new_keys.append(desc)
+                    except:
+                        new_keys.append(k)
+
+                bib_dict[item]['keywords'] = '{'+f'{",".join(new_keys).lower()},{tag}'+'}'            
+            else:
+                bib_dict[item]['keywords']= '{' + f'{tag}' + '}'
+        
+    return bib_dict
+    
+def sanitise_multi(megalib):
+    # megalib is a list of N dictionaries.
+    # Find and merge multiple occurencies, keeping all tags
+
+    Nlibs = len(megalib)   
+    records = megalib[0]
+
+    if Nlibs == 1:
+        pass
+    else:
+        for lib in megalib[1:]:
+            for lib_key, lib_value in lib.items():
+                if lib_key in records.keys():
+                    # merge keywords
+                    # Ingore beginning and end brackets: "{},". 
+                    # Don't replace them, as they can appear inside the text.
+                    temp_keywords = lib[lib_key]['keywords'][1:-1].split(',')
+                    old_keywords = records[lib_key]['keywords'][1:-1].split(',')
+                    #
+                    new_keywords = list(set(temp_keywords+old_keywords))
+                    # update keywords with merged set
+                    records[lib_key]['keywords'] = '{'+','.join(new_keywords)+'}'
+                else:
+                    records[lib_key] = lib_value
+    return records
+
+def dict_to_bib(records):
+    # format for saving in .bib
+    final_bib = ''
+    for key1, value_dict in records.items():
+        
+        inner_str = ',\n'.join([f'{key2.rjust(16, " ")} = {value}' for key2, value in value_dict.items()])
+        
+        final_bib = final_bib + f'@{key1},\n{inner_str}'+'\n}\n\n'
+    
+    return final_bib
+    
+    
+    
+    
+    
