@@ -2,6 +2,7 @@ import math
 import requests
 import json
 import warnings
+
 # https://astrothesaurus.org/
 # https://github.com/astrothesaurus/UAT
 # version 4.2.0
@@ -175,12 +176,23 @@ def get_library(library_id, num_documents, config):
     return documents
 
 def adsresponse_to_dict(bib_received):
+
     list_bib = bib_received.split('@')[1:]
     #
+    # Extract abstract
+    if 'abstract = ' in list_bib[0]:
+        has_abstract = True
+    else:
+        has_abstract = False
+
+    #bib_keys = ['author', 'title', 'journal', 'keywords', 'year', 'month', 'volume', 'number', 'eid', 'pages', 'abstract', 'doi', 'archivePrefix', 'eprint', 'primaryClass', 'adsurl', 'adsnote']
+
     # store library into 2D dictionary
     records = {}
     for record in list_bib:
+
         row = [r.strip() for r in record.strip().split(',\n')]
+
         # Replace space in author names
         ads_key = row[0].replace(' ', '-')
         #
@@ -189,27 +201,108 @@ def adsresponse_to_dict(bib_received):
         else:
         # split values into dictionary
             temp_dict = {}
-            for item in row[1:-1]:
-                if 'author' in item:
+            abs_loc = 0
+            for item in row[1:]:
+
+                if 'author =' in item:
                     items = item.split('author = ')
                     key = 'author'
                     value = items[1]                    
-                elif 'title' in item:
+                    abs_loc = abs_loc + 1
+                elif 'title =' in item:
                     items = item.split('title = ')
                     key = 'title'
                     value = items[1]    
+                    abs_loc = abs_loc + 1
+                elif 'journal = ' in item:
+                    items = item.split('journal = ')
+                    key = 'journal'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1
                 elif 'keywords = ' in item:
                     items = item.split('keywords = ')
                     key = 'keywords'
                     value = items[1]  
+                    abs_loc = abs_loc + 1
+                elif 'year = ' in item:
+                    items = item.split('year = ')
+                    key = 'year'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1   
+                elif 'month = ' in item:
+                    items = item.split('month = ')
+                    key = 'month'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1    
+                elif 'volume = ' in item:
+                    items = item.split('volume = ')
+                    key = 'volume'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1       
+                elif 'eid = ' in item:
+                    items = item.split('eid = ')
+                    key = 'eid'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1     
+                elif 'booktitle = ' in item:
+                    items = item.split('booktitle = ')
+                    key = 'booktitle'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1        
+                elif 'editor = ' in item:
+                    items = item.split('editor = ')
+                    key = 'editor'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1   
+                elif 'series = ' in item:
+                    items = item.split('series = ')
+                    key = 'series'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1                                    
+                elif 'number = ' in item:
+                    items = item.split('number = ')
+                    key = 'number'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1   
+                elif 'pages = ' in item:
+                    items = item.split('pages = ')
+                    key = 'pages'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1                                                                                    
+                elif 'abstract = ' in item:
+                    items = item.split('abstract = ')
+                    key = 'abstract'
+                    value = items[1]  
+                    abs_loc = abs_loc + 1                      
                 else:
-                    items = item.split(' =')
-                    key, value = items[0], items[1]
+                    items = item.split(' = ')
+
+                    if len(items) == 1:
+                        pass
+                    else:
+                        key, value = items[0], items[1]
                 #
                 #
                 temp_dict[key.strip()]=value.strip()
-                #
+            #
+            kend = len(temp_dict.keys())
+
+            #print(len(row))
+            #print(kend)
+            if has_abstract == True:
+                try:
+                    abstract_begin = abs_loc
+                    abstract_finish = abstract_begin + len(row) - kend
+
+                    abst = ' '.join([line.split('abstract =')[-1] for line in row[abstract_begin:abstract_finish]])
+                    abstract = ' '.join([ line.strip() for line in abst.split('\n') ] ) + '}"'
+                    temp_dict['abstract'] = abstract.replace('}"}"','}"')
+                except Exception as error:
+                    print(row)
+                    print("An exception occurred:", type(error).__name__, "–", error) # An exception occurred: ZeroDivisionError – division by zero
+    
             records[ads_key] = temp_dict
+            
     #
     return records
 
