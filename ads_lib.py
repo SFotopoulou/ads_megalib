@@ -2,7 +2,7 @@ import math
 import requests
 import json
 import warnings
-
+from collections import OrderedDict
 # https://astrothesaurus.org/
 # https://github.com/astrothesaurus/UAT
 # version 4.2.0
@@ -132,6 +132,86 @@ def journal_names():
     long_name['\\caa'] = 'Chinese Astronomy and Astrophysics'
     return short_name, long_name
 
+# Copied from ADS code, used to parse fieds
+
+def __get_doc_type(self, solr_type):
+    """
+    convert from solr to BibTex document type
+
+    :param solr_type:
+    :return:
+    """
+    fields = {'article':'@ARTICLE', 'circular':'@ARTICLE', 'newsletter':'@ARTICLE',
+                'bookreview':'@ARTICLE', 'erratum':'@ARTICLE', 'obituary':'@ARTICLE',
+                'eprint':'@ARTICLE', 'catalog':'@ARTICLE', 'editorial':'@ARTICLE',
+                'book':'@BOOK', 
+                'inbook':'@INCOLLECTION',
+                'proceedings':'@PROCEEDINGS', 
+                'inproceedings':'@INPROCEEDINGS', 'abstract':'@INPROCEEDINGS',
+                'misc':'@MISC', 'software':'@MISC','proposal':'@MISC', 'pressrelease':'@MISC',
+                'talk':'@MISC',
+                'phdthesis':'@PHDTHESIS','mastersthesis':'@MASTERSTHESIS',
+                'techreport':'@MISC', 'intechreport':'@MISC'}
+    return fields.get(solr_type, '')
+
+def __get_fields(doc_type_bibtex):
+    """
+    exported fields for various document types
+
+    :param a_doc:
+    :return:
+    """
+    if (doc_type_bibtex == '@ARTICLE'):
+        fields = [('author', 'author'), ('title', 'title'), ('pub', 'journal'),
+                    ('keyword', 'keywords'), ('year', 'year'), ('month', 'month'),
+                    ('volume', 'volume'), ('issue', 'number'), ('eid', 'eid'),
+                    ('page_range', 'pages'), ('abstract', 'abstract'), ('doi', 'doi'),
+                    ('eprintid', 'archivePrefix'), ('eprintid2', 'eprint'), ('arxiv_class', 'primaryClass'),
+                    ('bibcode', 'adsurl'), ('adsnotes', 'adsnote')]
+    elif (doc_type_bibtex == '@BOOK'):
+        fields = [('author', 'author'), ('title', 'title'),
+                    ('year', 'year'), ('volume', 'volume'), ('doi', 'doi'),
+                    ('bibcode', 'adsurl'), ('adsnotes', 'adsnote')]
+    elif (doc_type_bibtex == '@INCOLLECTION'):
+        fields = [('author', 'author'), ('title', 'title'), ('keyword', 'keywords'),
+                    ('pub', 'booktitle'), ('year', 'year'), ('editor', 'editor'),
+                    ('volume', 'volume'), ('series', 'series'), ('eid', 'eid'),
+                    ('page_range', 'pages'), ('abstract', 'abstract'), ('doi', 'doi'),
+                    ('bibcode', 'adsurl'), ('adsnotes', 'adsnote')]
+    elif (doc_type_bibtex == '@PROCEEDINGS'):
+        fields = [('title', 'title'), ('keyword', 'keywords'), ('pub', 'booktitle'),
+                    ('year', 'year'), ('editor', 'editor'), ('series', 'series'),
+                    ('volume', 'volume'), ('month', 'month'), ('doi', 'doi'),
+                    ('eprintid', 'archivePrefix'), ('eprintid2', 'eprint'), ('arxiv_class', 'primaryClass'),
+                    ('abstract', 'abstract'), ('bibcode', 'adsurl'), ('adsnotes', 'adsnote')]
+    elif (doc_type_bibtex == '@INPROCEEDINGS'):
+        fields = [('author', 'author'), ('title', 'title'), ('keyword', 'keywords'),
+                    ('pub', 'booktitle'), ('year', 'year'), ('editor', 'editor'),
+                    ('series', 'series'), ('volume', 'volume'), ('month', 'month'),
+                    ('eid', 'eid'), ('page_range', 'pages'), ('abstract', 'abstract'),
+                    ('doi', 'doi'), ('eprintid', 'archivePrefix'), ('eprintid2', 'eprint'), ('arxiv_class', 'primaryClass'),
+                    ('bibcode', 'adsurl'), ('adsnotes', 'adsnote')]
+    elif (doc_type_bibtex == '@MISC'):
+        fields = [('author', 'author'), ('title', 'title'), ('keyword', 'keywords'),
+                    ('pub_raw', 'howpublished'), ('year', 'year'), ('month', 'month'),
+                    ('eid', 'eid'), ('page_range', 'pages'), ('doi', 'doi'),
+                    ('eprintid', 'archivePrefix'), ('eprintid2', 'eprint'), ('arxiv_class', 'primaryClass'),
+                    ('version', 'version'), ('publisher', 'publisher'),
+                    ('bibcode', 'adsurl'), ('adsnotes', 'adsnote')]
+    elif (doc_type_bibtex == '@PHDTHESIS') or (doc_type_bibtex == '@MASTERSTHESIS'):
+        fields = [('author', 'author'), ('title', 'title'), ('keyword', 'keywords'),
+                    ('aff', 'school'), ('year', 'year'), ('month', 'month'),
+                    ('bibcode', 'adsurl'),('adsnotes', 'adsnote')]
+    # 2/14 mapping techreport and intechreport to @MISC per Markus request for now
+    # elif (doc_type_bibtex == '@TECHREPORT'):
+    #     fields = [('author', 'author'), ('title', 'title'), ('pub_raw', 'journal'),
+    #               ('keyword', 'keywords'), ('pub', 'booktitle'), ('year', 'year'),
+    #               ('editor', 'editor'), ('series', 'series'), ('month', 'month'),
+    #               ('eid', 'eid'), ('page_range', 'pages'), ('volume', 'volume'),
+    #               ('doi', 'doi'), ('bibcode', 'adsurl'), ('adsnotes', 'adsnote')]
+    else:
+        fields = []
+    return OrderedDict(fields)
 
 def get_library(library_id, num_documents, config):
     # from https://github.com/adsabs/ads-examples/blob/master/library_csv/lib_2_csv.py
@@ -185,7 +265,7 @@ def adsresponse_to_dict(bib_received):
     else:
         has_abstract = False
 
-    #bib_keys = ['author', 'title', 'journal', 'keywords', 'year', 'month', 'volume', 'number', 'eid', 'pages', 'abstract', 'doi', 'archivePrefix', 'eprint', 'primaryClass', 'adsurl', 'adsnote']
+    #bib_keys = default_solr_fields()
 
     # store library into 2D dictionary
     records = {}
@@ -199,102 +279,43 @@ def adsresponse_to_dict(bib_received):
         if ads_key == '':
             pass
         else:
-        # split values into dictionary
+            pub_type = '@'+ads_key.split('{')[0]
+
+            try:
+                field_dict = __get_fields(pub_type)
+                fields = field_dict.values()
+            except Exception as error:
+                print(f'{pub_type} unknown')
+                print("An exception occurred:", type(error).__name__, "–", error) 
+
+            # split values into dictionary
             temp_dict = {}
             abs_loc = 0
-            for item in row[1:]:
-
-                if 'author =' in item:
-                    items = item.split('author = ')
-                    key = 'author'
-                    value = items[1]                    
-                    abs_loc = abs_loc + 1
-                elif 'title =' in item:
-                    items = item.split('title = ')
-                    key = 'title'
-                    value = items[1]    
-                    abs_loc = abs_loc + 1
-                elif 'journal = ' in item:
-                    items = item.split('journal = ')
-                    key = 'journal'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1
-                elif 'keywords = ' in item:
-                    items = item.split('keywords = ')
-                    key = 'keywords'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1
-                elif 'year = ' in item:
-                    items = item.split('year = ')
-                    key = 'year'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1   
-                elif 'month = ' in item:
-                    items = item.split('month = ')
-                    key = 'month'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1    
-                elif 'volume = ' in item:
-                    items = item.split('volume = ')
-                    key = 'volume'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1       
-                elif 'eid = ' in item:
-                    items = item.split('eid = ')
-                    key = 'eid'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1     
-                elif 'booktitle = ' in item:
-                    items = item.split('booktitle = ')
-                    key = 'booktitle'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1        
-                elif 'editor = ' in item:
-                    items = item.split('editor = ')
-                    key = 'editor'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1   
-                elif 'series = ' in item:
-                    items = item.split('series = ')
-                    key = 'series'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1                                    
-                elif 'number = ' in item:
-                    items = item.split('number = ')
-                    key = 'number'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1   
-                elif 'pages = ' in item:
-                    items = item.split('pages = ')
-                    key = 'pages'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1                                                                                    
-                elif 'abstract = ' in item:
-                    items = item.split('abstract = ')
-                    key = 'abstract'
-                    value = items[1]  
-                    abs_loc = abs_loc + 1                      
-                else:
-                    items = item.split(' = ')
-
-                    if len(items) == 1:
-                        pass
-                    else:
-                        key, value = items[0], items[1]
+            for field in fields:
+                for i, item in enumerate(row):
+                
+                    if f'{field} =' in item:
+                        items = item.split(f'{field} = ')
+                        key = field
+                        value = items[1]                    
+                        if field.lower() == 'abstract':
+                            abs_loc = i 
                 #
-                #
-                temp_dict[key.strip()]=value.strip()
-            #
-            kend = len(temp_dict.keys())
-
+                try:
+                    temp_dict[key.strip()] = value.strip()
+                except Exception as error:
+                    print(row)
+                    print("An exception occurred:", type(error).__name__, "–", error) # An exception occurred: ZeroDivisionError – division by zero
+        
             #print(len(row))
             #print(kend)
             if has_abstract == True:
                 try:
-                    abstract_begin = abs_loc
-                    abstract_finish = abstract_begin + len(row) - kend
-
-                    abst = ' '.join([line.split('abstract =')[-1] for line in row[abstract_begin:abstract_finish]])
+                    abstract_finish = abs_loc + len(row) - len(temp_dict.keys()) 
+                    
+                    temp_abst = [line.split('abstract =')[-1] for line in row[abs_loc:abstract_finish]]
+                    
+                    abst = ' '.join(temp_abst)
                     abstract = ' '.join([ line.strip() for line in abst.split('\n') ] ) + '}"'
                     temp_dict['abstract'] = abstract.replace('}"}"','}"')
                 except Exception as error:
@@ -326,7 +347,13 @@ def fix_journal_abbr(bib_dict, format='short'):
                 new_name = '{' + name + '}'
                 bib_dict[item]['journal'] = new_name
         except:
-            warnings.warn(f"Warning: {item} has no 'Journal' keyword.")
+            pub_type = __get_fields(f'@{item.split("{")[0]}')
+            values = [x.lower() for x in pub_type.values()]
+            if 'journal' in values:
+                warnings.warn(f"Warning: {item} has no 'Journal' keyword.")
+            else:
+                # 'Journal' not expected for this pub_type
+                pass
     return bib_dict
 
 def resolve_uat(code, thesaurus=uris):
