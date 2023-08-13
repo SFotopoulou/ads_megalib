@@ -8,7 +8,7 @@ from ads_lib import adsresponse_to_dict, dict_to_bib
 
 ######### Parameters #########
 export_filename = 'exportlib.bib'
-export_format = 'bibtex'
+export_format = 'bibtexabs'
 # leave empty to export all your libraries
 # or use comma-separated names of your libraries
 library_name = ''

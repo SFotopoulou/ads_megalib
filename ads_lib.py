@@ -330,7 +330,7 @@ def adsresponse_to_dict(bib_received):
                     print(row)
                     print("An exception occurred:", type(error).__name__, "–", error) # An exception occurred: ZeroDivisionError – division by zero
     
-            records[ads_key] = temp_dict
+            records[ads_key] = OrderedDict(temp_dict)
             
     #
     return records

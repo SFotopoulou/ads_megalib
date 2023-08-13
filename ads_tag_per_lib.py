@@ -108,7 +108,7 @@ for library in my_libraries:
 final_dict = sanitise_multi(megalib)
 final_lib = dict_to_bib(final_dict)
 # 
-uniq_bibcodes = final_lib.count('title =')
+uniq_bibcodes = len(final_dict.keys())
 #
 print(f"Total {bibcode_sum} bibcodes, {uniq_bibcodes} unique ({round(100*uniq_bibcodes/bibcode_sum, 1)}%)")
 print(f"Output in {export_filename}")
