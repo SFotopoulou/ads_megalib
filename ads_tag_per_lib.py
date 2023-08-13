@@ -10,7 +10,7 @@ from ads_lib import adsresponse_to_dict, sanitise_multi, add_keyword_tag, dict_t
 
 ######### Parameters #########
 export_filename = 'test_tagged_export.bib'
-export_format = 'bibtex'
+export_format = 'bibtexabs'
 # leave empty to export all your libraries
 # or use comma-separated names of your libraries
 library_name = ''
@@ -19,7 +19,7 @@ sort_format = "first_author asc"
 # Use short or long journal names instead of journal TeX abbreviations; \aj
 fix_journal = True
 add_keyword = True
-keep_only_ads_tags = True
+keep_only_myads_tags = False
 tag_prefix = ''
 ######################################
 
@@ -97,7 +97,7 @@ for library in my_libraries:
         if add_keyword == True:
             expbib = add_keyword_tag(expbib, 
                                     tag=f'{tag_prefix}{lib_name}',
-                                    only_ads=keep_only_ads_tags)
+                                    only_myads=keep_only_myads_tags)
         #   
         megalib.append( expbib )
         #

@@ -74,7 +74,11 @@ def journal_names():
     short_name['\\icarus'] = 'Icarus'
     short_name['\\pasa'] = 'PASA'
     short_name['\\jcap'] = 'JCAP'
-    short_name['\\caa'] = 'ChA&A'
+    short_name['\\caa'] = 'ChA\&A'
+    short_name['\\jaavso'] = 'JAVSO'
+    short_name['\\psj'] = 'PSJ'
+    short_name['\\actaa'] = 'AcA'    
+    short_name['\\maps'] = 'M\&PS'
 
     long_name['\\aj'] = 'Astronomical Journal'
     long_name['\\araa'] = 'Annual Review of Astron and Astrophysics'
@@ -130,6 +134,10 @@ def journal_names():
     long_name['\\pasa'] = 'Publications of the Astronomical Society of Australia'
     long_name['\\jcap'] = 'Journal of Cosmology and Astroparticle Physics'
     long_name['\\caa'] = 'Chinese Astronomy and Astrophysics'
+    long_name['\\jaavso'] = 'Journal of the American Association of Variable Star Observers'
+    long_name['\\psj'] = 'The Planetary Science Journal'
+    long_name['\\actaa'] = 'Acta Astronomica'
+    long_name['\\maps'] = 'Meteoritics and Planetary Science'
     return short_name, long_name
 
 # Copied from ADS code, used to parse fieds
@@ -361,11 +369,11 @@ def resolve_uat(code, thesaurus=uris):
     # https://astrothesaurus.org/
     return thesaurus[code]
     
-def add_keyword_tag(bib_dict, tag, only_ads=False):
+def add_keyword_tag(bib_dict, tag, only_myads=False):
     
     for item in bib_dict.keys():
-        if only_ads:
-            bib_dict[item]['keywords']= '{' + f'{tag}' + '}'
+        if only_myads:
+            bib_dict[item]['keywords']= '{' + f'{tag.strip().title()}' + '}'
         else:
             if 'keywords' in bib_dict[item].keys():
                 #
@@ -379,11 +387,14 @@ def add_keyword_tag(bib_dict, tag, only_ads=False):
                         desc = resolve_uat(code)
                         new_keys.append(desc)
                     except:
-                        new_keys.append(k)
+                        new_keys.append(k.strip().title())
 
-                bib_dict[item]['keywords'] = '{'+f'{",".join(new_keys).lower()},{tag}'+'}'            
+                # some article contain a code that resolves to existing keyword
+                # remove duplicate occurancies
+                new_keys = set(new_keys)
+                bib_dict[item]['keywords'] = '{'+f'{",".join(new_keys)},{tag}'+'}'            
             else:
-                bib_dict[item]['keywords']= '{' + f'{tag}' + '}'
+                bib_dict[item]['keywords']= '{' + f'{tag.strip().title()}' + '}'
         
     return bib_dict
     
