@@ -107,4 +107,5 @@ venv.bak/
 mysecrets
 *.bib
 *.csv
+*.sav
 *~
