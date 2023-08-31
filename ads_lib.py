@@ -424,7 +424,7 @@ def sanitise_multi(megalib):
                     records[lib_key] = lib_value
     return records
 
-def dict_to_bib(records):
+def dict_to_bib(records, fout, columns=''):
     # format for saving in .bib
     final_bib = ''
     for key1, value_dict in records.items():
@@ -433,9 +433,48 @@ def dict_to_bib(records):
         
         final_bib = final_bib + f'@{key1},\n{inner_str}'+'\n}\n\n'
     
-    return final_bib
+    fout.write(final_bib)
+    return 
     
     
+def dict_to_csv(records, fout, columns=''):
+    # Save .bib in .csv
+    # Predefined columns, empty column if not a valid .bib field.
+    import csv
+
+    write = csv.writer(fout)
+
+    # CSV header
+    write.writerow(['No'] + columns)
+
+    # Select columns, add extras
+    entries = []
+    for i, rec_k in enumerate(records):
+        entry = [i+1]
+        # rec_k = citation_key
+        # records[rec_k] = dictionary with bibtex record
+        for column in columns:
+            if column == 'citekey':
+                entry.append(rec_k.split('{')[-1])
+            elif column in records[rec_k]:
+                value = records[rec_k][column].replace('{','').replace('}','')
+                if column == 'doi':
+                    value = f'https://doi.org/{value}'   
+                entry.append(value)
+            else:
+                if column == 'read status':
+                    value = 'false'
+                elif column == 'relevance':
+                    value = 'false'
+                else:
+                    value = ''
+                entry.append(value)
+
+        entries.append(entry)
+
+    write.writerows(entries)
+    
+    return 
     
     
     
