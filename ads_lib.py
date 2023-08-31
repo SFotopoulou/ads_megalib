@@ -440,21 +440,39 @@ def dict_to_bib(records, fout, columns=''):
 def dict_to_csv(records, fout, columns=''):
     # Save .bib in .csv
     # Predefined columns, empty column if not a valid .bib field.
-    
-    for rec_k, rec_v in records.items():
+    import csv
+
+    write = csv.writer(fout)
+
+    # CSV header
+    write.writerow(['No'] + columns)
+
+    # Select columns, add extras
+    entries = []
+    for i, rec_k in enumerate(records):
+        entry = [i+1]
         # rec_k = citation_key
-        # rec_v = dictionary with bibtex record
-        columns.extend(records.keys())
+        # records[rec_k] = dictionary with bibtex record
+        for column in columns:
+            if column == 'citekey':
+                entry.append(rec_k.split('{')[-1])
+            elif column in records[rec_k]:
+                value = records[rec_k][column].replace('{','').replace('}','')
+                if column == 'doi':
+                    value = f'https://doi.org/{value}'   
+                entry.append(value)
+            else:
+                if column == 'read status':
+                    value = 'false'
+                elif column == 'relevance':
+                    value = 'false'
+                else:
+                    value = ''
+                entry.append(value)
 
-    #title = ','.join(records.keys())
+        entries.append(entry)
 
-    #body
-
-    for key1, value_dict in records.items():
-        
-        inner_str = ',\n'.join([f'{key2.rjust(16, " ")} = {value}' for key2, value in value_dict.items()])
-        
-        final_bib = final_bib + f'@{key1},\n{inner_str}'+'\n}\n\n'
+    write.writerows(entries)
     
     return 
     

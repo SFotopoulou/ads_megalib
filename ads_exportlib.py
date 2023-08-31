@@ -8,15 +8,15 @@ from ads_lib import adsresponse_to_dict, dict_to_bib, dict_to_csv
 
 ######### Parameters #########
 # leave empty to export all your libraries or use comma-separated names of your libraries
-library_name = 'test'
+library_name = 'ML - unsupervised learning'
 export_format = 'bibtexabs' # citation style from ADS
-export_filename = 'test'
-export_filetype = 'bib' # bib (default), CSV
-# A csv export is meant to help you keep track of the reading list, e.g. by import in Notion.
+export_filename = 'Unsupervised_Learning'
+export_filetype = 'csv' # bib (default), CSV
+# A csv export is meant to help you keep track of the reading list, e.g. importing in Notion or topcat.
 # If exporting in csv, keep a selection of columns. Ignored in bib.
 # Select any of the Bibtex columns, and add extras that will appear empty in the CSV file.
-columns = ['read status', 'relevance', 'citekey', 'author', 'title', 'year', 'journal',
-            'keywords', 'abstract', 'doi', 'eprint','adsurl',
+columns = ['citekey', 'title', 'year', 'abstract', 'read status', 'relevance','author','journal',
+            'keywords', 'doi', 'eprint','adsurl',
             ]
 
 bibtex_keyformat = "%1H%R"
