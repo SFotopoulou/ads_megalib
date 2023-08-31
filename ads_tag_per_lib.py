@@ -9,7 +9,7 @@ from ads_lib import fix_journal_abbr
 from ads_lib import adsresponse_to_dict, sanitise_multi, add_keyword_tag, dict_to_bib
 
 ######### Parameters #########
-export_filename = 'test_tagged_export.bib'
+export_filename = 'EXPORT-TAG-AUG23.bib'
 export_format = 'bibtexabs'
 # leave empty to export all your libraries
 # or use comma-separated names of your libraries

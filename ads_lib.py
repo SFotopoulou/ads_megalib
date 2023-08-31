@@ -424,7 +424,7 @@ def sanitise_multi(megalib):
                     records[lib_key] = lib_value
     return records
 
-def dict_to_bib(records):
+def dict_to_bib(records, fout, columns=''):
     # format for saving in .bib
     final_bib = ''
     for key1, value_dict in records.items():
@@ -433,9 +433,30 @@ def dict_to_bib(records):
         
         final_bib = final_bib + f'@{key1},\n{inner_str}'+'\n}\n\n'
     
-    return final_bib
+    fout.write(final_bib)
+    return 
     
     
+def dict_to_csv(records, fout, columns=''):
+    # Save .bib in .csv
+    # Predefined columns, empty column if not a valid .bib field.
+    
+    for rec_k, rec_v in records.items():
+        # rec_k = citation_key
+        # rec_v = dictionary with bibtex record
+        columns.extend(records.keys())
+
+    #title = ','.join(records.keys())
+
+    #body
+
+    for key1, value_dict in records.items():
+        
+        inner_str = ',\n'.join([f'{key2.rjust(16, " ")} = {value}' for key2, value in value_dict.items()])
+        
+        final_bib = final_bib + f'@{key1},\n{inner_str}'+'\n}\n\n'
+    
+    return 
     
     
     

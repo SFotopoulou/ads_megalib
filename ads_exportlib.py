@@ -4,22 +4,39 @@ import requests
 import json
 from ads_lib import get_library
 from ads_lib import fix_journal_abbr
-from ads_lib import adsresponse_to_dict, dict_to_bib
+from ads_lib import adsresponse_to_dict, dict_to_bib, dict_to_csv
 
 ######### Parameters #########
-export_filename = 'exportlib.bib'
-export_format = 'bibtexabs'
-# leave empty to export all your libraries
-# or use comma-separated names of your libraries
-library_name = ''
+# leave empty to export all your libraries or use comma-separated names of your libraries
+library_name = 'test'
+export_format = 'bibtexabs' # citation style from ADS
+export_filename = 'test'
+export_filetype = 'bib' # bib (default), CSV
+# A csv export is meant to help you keep track of the reading list, e.g. by import in Notion.
+# If exporting in csv, keep a selection of columns. Ignored in bib.
+# Select any of the Bibtex columns, and add extras that will appear empty in the CSV file.
+columns = ['read status', 'relevance', 'citekey', 'author', 'title', 'year', 'journal',
+            'keywords', 'abstract', 'doi', 'eprint','adsurl',
+            ]
+
 bibtex_keyformat = "%1H%R"
 sort_format = "first_author asc"
+#
 # Use short or long journal names instead of journal TeX abbreviations; \aj
 fix_journal = True
 ######################################
+# Validate saved file type
+if export_filetype.lower() == 'bib':
+    convert_dict = dict_to_bib
+    columns = ''
+elif export_filetype.lower() == 'csv':
+    convert_dict = dict_to_csv
+else:
+    exit(f'Unknown file format: {export_filetype}. Chose from (bib, csv).')
+filename = f'{export_filename}.{export_filetype}'
 
 #
-#
+# Connect to ADS account
 t = json.load(open('mysecrets'))
 my_token = t['my_token']
 base_url = "https://api.adsabs.harvard.edu/v1/biblib"
@@ -59,14 +76,8 @@ for library in my_libraries:
 # Keep unique bibcodes
 my_bibs = list(set(bibs))
 print("Found {} unique bibcodes".format(len(my_bibs)))
-# Export in bibtex
-try:
-    os.remove(export_filename)
-except OSError:
-    pass
 
 export_url = "https://api.adsabs.harvard.edu/v1/export/"+export_format
-
 
 start = 0
 rows = 2000
@@ -74,7 +85,8 @@ num_paginates = int(math.ceil(len(my_bibs) / (1.0*rows)))
 
 s1 = start
 s2 = rows
-fout = open(export_filename, 'a')
+
+expbib = {}
 
 for i in range(num_paginates):
     #
@@ -87,18 +99,20 @@ for i in range(num_paginates):
                                 headers=headers,
                                 data=json.dumps(querystring))
     # turn response into dictionary of references
-    expbib = adsresponse_to_dict(response.json()['export'])
+    temp_bib = adsresponse_to_dict(response.json()['export'])
 
     if fix_journal == True:
-        expbib = fix_journal_abbr(expbib, format='short')
+        temp_bib = fix_journal_abbr(temp_bib, format='short')
 
-    final_bib = dict_to_bib(expbib)
-
-    fout.write(final_bib)
-
+    for key, value in temp_bib.items():
+        expbib[key] = value
 
     s1 = s1 + rows
     s2 = s2 + rows
 
-fout.close()
+
+with open(filename, 'w') as fout:
+    final_bib = convert_dict(expbib, fout, columns=columns)
+
 print(response)
+print(f'Library saved in {filename}')
